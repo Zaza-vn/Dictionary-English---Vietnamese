@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Từ điển Anh – Việt</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Source+Serif+4:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9eef4;--surface:#fff;--ink:#14213d;--muted:#5b6678;--line:#cfd7e2;--accent:#0f766e;--accent-ink:#fff;--mark:#ffe08a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1522;--surface:#162033;--ink:#e8edf5;--muted:#9aa7bb;--line:#2a3750;--accent:#2dd4bf;--accent-ink:#06201d;--mark:#6b5a12}}
+:root[data-theme="dark"]{--bg:#0e1522;--surface:#162033;--ink:#e8edf5;--muted:#9aa7bb;--line:#2a3750;--accent:#2dd4bf;--accent-ink:#06201d;--mark:#6b5a12}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Be Vietnam Pro",system-ui,sans-serif}
+.app{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font:700 1.5rem "Source Serif 4",Georgia,serif;margin:0 0 14px}
+.search{display:flex;gap:8px;margin-bottom:16px}
+.search input{flex:1;min-width:0;font:inherit;font-size:1.1rem;padding:12px 14px;border:2px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 14px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{padding:6px 12px;font-size:.9rem}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:260px 1fr;gap:16px}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:12px;max-height:520px;overflow-y:auto;margin:0;padding:6px;list-style:none}
+.list li button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:8px}
+.list li button:hover,.list li button[aria-current="true"]{background:var(--bg)}
+.list small{color:var(--muted);display:block}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:24px;min-height:260px}
+.head{display:flex;align-items:baseline;flex-wrap:wrap;gap:10px}
+.word{font:700 2.4rem/1.1 "Source Serif 4",Georgia,serif;margin:0}
+.ipa{color:var(--muted)}
+.actions{margin-left:auto;display:flex;gap:6px}
+.pos{display:inline-block;font-style:italic;font-family:"Source Serif 4",serif;color:var(--accent);margin:14px 0 2px}
+.mean{font-size:1.25rem;font-weight:500;margin:0 0 8px}
+.ex{border-left:3px solid var(--accent);padding-left:12px;color:var(--muted);margin:10px 0}
+.ex b{color:var(--ink);font-weight:500}
+mark{background:var(--mark);color:inherit;border-radius:3px}
+.empty{color:var(--muted)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);width:min(440px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+label{display:block;margin:10px 0 4px;font-weight:500;font-size:.9rem}
+dialog input{width:100%;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.list{max-height:220px}.word{font-size:2rem}}
+</style>
+</head>
+<body>
+<main class="app">
+  <h1>Từ điển Anh – Việt</h1>
+  <div class="search">
+    <input id="q" type="search" placeholder="Nhập từ tiếng Anh, ví dụ: book" autocomplete="off" aria-label="Tìm từ">
+    <button class="primary" id="addBtn">Thêm từ</button>
+  </div>
+  <div class="tabs" role="group" aria-label="Danh sách">
+    <button data-tab="all" aria-pressed="true">Tất cả</button>
+    <button data-tab="fav" aria-pressed="false">Yêu thích</button>
+    <button data-tab="hist" aria-pressed="false">Đã tra</button>
+  </div>
+  <div class="grid">
+    <ul class="list" id="list"></ul>
+    <article class="card" id="detail" aria-live="polite"></article>
+  </div>
+</main>
+
+<dialog id="dlg">
+  <form method="dialog" id="form">
+    <strong>Thêm từ mới</strong>
+    <label for="nw">Từ tiếng Anh</label><input id="nw" required>
+    <label for="np">Phiên âm</label><input id="np" placeholder="/ˈeksəmpl/">
+    <label for="nt">Loại từ</label><input id="nt" placeholder="noun, verb, adj…">
+    <label for="nm">Nghĩa tiếng Việt</label><input id="nm" required>
+    <label for="ne">Ví dụ (tiếng Anh)</label><input id="ne">
+    <label for="nv">Dịch ví dụ</label><input id="nv">
+    <div class="row"><button value="cancel" type="button" id="cancel">Hủy</button><button class="primary" type="submit">Lưu từ</button></div>
+  </form>
+</dialog>
+
+<script>
+// ---- Dữ liệu mẫu: thêm từ mới bằng cách bổ sung vào mảng này ----
+const BASE = [
+ ["hello","/həˈləʊ/","interjection","xin chào","Hello, how are you?","Xin chào, bạn khỏe không?"],
+ ["goodbye","/ɡʊdˈbaɪ/","interjection","tạm biệt","Goodbye, see you tomorrow.","Tạm biệt, hẹn mai gặp lại."],
+ ["thank","/θæŋk/","verb","cảm ơn","I thank you for your help.","Tôi cảm ơn bạn đã giúp đỡ."],
+ ["book","/bʊk/","noun","quyển sách","She is reading a book.","Cô ấy đang đọc một quyển sách."],
+ ["water","/ˈwɔːtə/","noun","nước","Please drink more water.","Hãy uống nhiều nước hơn."],
+ ["house","/haʊs/","noun","ngôi nhà","They live in a big house.","Họ sống trong một ngôi nhà lớn."],
+ ["family","/ˈfæməli/","noun","gia đình","My family is very important to me.","Gia đình rất quan trọng với tôi."],
+ ["friend","/frend/","noun","bạn bè","He is my best friend.","Anh ấy là bạn thân nhất của tôi."],
+ ["school","/skuːl/","noun","trường học","The children go to school by bus.","Bọn trẻ đến trường bằng xe buýt."],
+ ["teacher","/ˈtiːtʃə/","noun","giáo viên","Our teacher is very kind.","Giáo viên của chúng tôi rất tốt bụng."],
+ ["student","/ˈstjuːdnt/","noun","học sinh, sinh viên","She is a university student.","Cô ấy là sinh viên đại học."],
+ ["learn","/lɜːn/","verb","học, học hỏi","I want to learn English.","Tôi muốn học tiếng Anh."],
+ ["study","/ˈstʌdi/","verb","học, nghiên cứu","He studies every night.","Anh ấy học mỗi tối."],
+ ["work","/wɜːk/","verb","làm việc","I work in an office.","Tôi làm việc ở văn phòng."],
+ ["eat","/iːt/","verb","ăn","We eat dinner at seven.","Chúng tôi ăn tối lúc bảy giờ."],
+ ["drink","/drɪŋk/","verb","uống","Do you drink coffee?","Bạn có uống cà phê không?"],
+ ["sleep","/sliːp/","verb","ngủ","The baby is sleeping.","Em bé đang ngủ."],
+ ["love","/lʌv/","verb","yêu, thích","I love Vietnamese food.","Tôi thích món ăn Việt Nam."],
+ ["happy","/ˈhæpi/","adjective","vui vẻ, hạnh phúc","I am happy to see you.","Tôi rất vui khi gặp bạn."],
+ ["sad","/sæd/","adjective","buồn","She felt sad after the news.","Cô ấy thấy buồn sau tin đó."],
+ ["big","/bɪɡ/","adjective","to, lớn","That is a big city.","Đó là một thành phố lớn."],
+ ["small","/smɔːl/","adjective","nhỏ","It is a small village.","Đó là một ngôi làng nhỏ."],
+ ["beautiful","/ˈbjuːtɪfl/","adjective","đẹp","Huế is a beautiful city.","Huế là một thành phố đẹp."],
+ ["fast","/fɑːst/","adjective","nhanh","He runs very fast.","Anh ấy chạy rất nhanh."],
+ ["slow","/sləʊ/","adjective","chậm","The internet is slow today.","Hôm nay mạng chậm."],
+ ["new","/njuː/","adjective","mới","I bought a new phone.","Tôi đã mua một chiếc điện thoại mới."],
+ ["old","/əʊld/","adjective","cũ, già","This is an old building.","Đây là một tòa nhà cũ."],
+ ["time","/taɪm/","noun","thời gian, lần","What time is it?","Mấy giờ rồi?"],
+ ["day","/deɪ/","noun","ngày","Have a nice day!","Chúc một ngày tốt lành!"],
+ ["night","/naɪt/","noun","đêm, tối","Good night!","Chúc ngủ ngon!"],
+ ["year","/jɪə/","noun","năm","This year is going fast.","Năm nay trôi qua thật nhanh."],
+ ["money","/ˈmʌni/","noun","tiền","He saves money every month.","Anh ấy tiết kiệm tiền mỗi tháng."],
+ ["food","/fuːd/","noun","thức ăn","The food here is delicious.","Đồ ăn ở đây rất ngon."],
+ ["city","/ˈsɪti/","noun","thành phố","She moved to a new city.","Cô ấy chuyển đến một thành phố mới."],
+ ["country","/ˈkʌntri/","noun","đất nước, quốc gia","Vietnam is a beautiful country.","Việt Nam là một đất nước đẹp."],
+ ["computer","/kəmˈpjuːtə/","noun","máy tính","I use a computer every day.","Tôi dùng máy tính mỗi ngày."],
+ ["phone","/fəʊn/","noun","điện thoại","Turn off your phone.","Hãy tắt điện thoại của bạn."],
+ ["language","/ˈlæŋɡwɪdʒ/","noun","ngôn ngữ","English is a global language.","Tiếng Anh là ngôn ngữ toàn cầu."],
+ ["travel","/ˈtrævl/","verb","đi du lịch","I love to travel.","Tôi thích đi du lịch."],
+ ["help","/help/","verb","giúp đỡ","Can you help me?","Bạn giúp tôi được không?"],
+ ["understand","/ˌʌndəˈstænd/","verb","hiểu","I don’t understand this word.","Tôi không hiểu từ này."],
+ ["important","/ɪmˈpɔːtnt/","adjective","quan trọng","Health is very important.","Sức khỏe rất quan trọng."],
+ ["difficult","/ˈdɪfɪkəlt/","adjective","khó","This question is difficult.","Câu hỏi này khó."],
+ ["easy","/ˈiːzi/","adjective","dễ","The test was easy.","Bài kiểm tra rất dễ."]
+].map(([w,p,t,m,e,v])=>({w,p,t,m,e,v}));
+
+// ---- Lưu trữ (an toàn khi bị chặn) ----
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+             set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let custom=store.get("dict_custom",[]), favs=store.get("dict_favs",[]), hist=store.get("dict_hist",[]);
+let tab="all", current=null;
+const $=s=>document.querySelector(s);
+const all=()=>[...BASE,...custom].sort((a,b)=>a.w.localeCompare(b.w));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const norm=s=>s.trim().toLowerCase();
+
+function matches(q){
+  const n=norm(q), src=all();
+  if(!n) return src;
+  const starts=src.filter(x=>x.w.startsWith(n));
+  const has=src.filter(x=>!x.w.startsWith(n)&&(x.w.includes(n)||norm(x.m).includes(n)));
+  return [...starts,...has];
+}
+function renderList(){
+  let items=matches($("#q").value);
+  if(tab==="fav") items=items.filter(x=>favs.includes(x.w));
+  if(tab==="hist") items=hist.map(w=>items.find(x=>x.w===w)).filter(Boolean);
+  $("#list").innerHTML=items.length?items.map(x=>
+    `<li><button data-w="${esc(x.w)}" ${current&&current.w===x.w?'aria-current="true"':""}>${esc(x.w)}<small>${esc(x.m)}</small></button></li>`).join("")
+    :`<li class="empty" style="padding:10px">Không có từ nào phù hợp.</li>`;
+}
+function show(word){
+  const x=all().find(i=>i.w===word); if(!x) return;
+  current=x; hist=[x.w,...hist.filter(w=>w!==x.w)].slice(0,30); store.set("dict_hist",hist);
+  const isFav=favs.includes(x.w);
+  $("#detail").innerHTML=`<div class="head"><h2 class="word">${esc(x.w)}</h2><span class="ipa">${esc(x.p||"")}</span>
+   <div class="actions"><button id="spk" aria-label="Nghe phát âm">Nghe</button>
+   <button id="fav" aria-pressed="${isFav}">${isFav?"Bỏ yêu thích":"Yêu thích"}</button></div></div>
+   <span class="pos">${esc(x.t||"")}</span><p class="mean">${esc(x.m)}</p>
+   ${x.e?`<div class="ex"><b>${esc(x.e)}</b><br>${esc(x.v||"")}</div>`:""}`;
+  $("#spk").onclick=()=>{try{const u=new SpeechSynthesisUtterance(x.w);u.lang="en-US";speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}};
+  $("#fav").onclick=()=>{favs=favs.includes(x.w)?favs.filter(w=>w!==x.w):[...favs,x.w];store.set("dict_favs",favs);show(x.w)};
+  renderList();
+}
+$("#q").addEventListener("input",()=>{renderList();const m=matches($("#q").value);if(norm($("#q").value)&&m.length)show(m[0].w)});
+$("#q").addEventListener("keydown",e=>{if(e.key==="Enter"){const m=matches($("#q").value);if(m.length)show(m[0].w)}});
+$("#list").addEventListener("click",e=>{const b=e.target.closest("button[data-w]");if(b)show(b.dataset.w)});
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  tab=b.dataset.tab;document.querySelectorAll(".tabs button").forEach(t=>t.setAttribute("aria-pressed",t===b));renderList()});
+$("#addBtn").onclick=()=>$("#dlg").showModal();
+$("#cancel").onclick=()=>$("#dlg").close();
+$("#form").addEventListener("submit",()=>{
+  const w=norm($("#nw").value); if(!w) return;
+  custom=[...custom.filter(x=>x.w!==w),{w,p:$("#np").value.trim(),t:$("#nt").value.trim(),m:$("#nm").value.trim(),e:$("#ne").value.trim(),v:$("#nv").value.trim()}];
+  store.set("dict_custom",custom); $("#form").reset(); setTimeout(()=>show(w),0);
+});
+$("#detail").innerHTML='<p class="empty">Gõ một từ vào ô tìm kiếm hoặc chọn từ trong danh sách để xem nghĩa, phiên âm và ví dụ.</p>';
+renderList();
+</script>
+</body>
+</html>
