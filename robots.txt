@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://zaza-vn.github.io/Dictionary-English---Vietnamese/sitemap.xml
